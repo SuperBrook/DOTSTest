@@ -7,8 +7,12 @@ using UnityEngine;
 public struct MonsterData : IComponentData
 {
     public float hp;
-    public float moveSpeed;
 
+    public Entity bullet;
+
+    public float createBulletTime;
+
+    public float createBulletInterval;
 }
 
 public readonly partial struct MonsterAspect : IAspect
@@ -16,28 +20,51 @@ public readonly partial struct MonsterAspect : IAspect
     public readonly RefRW<MonsterData> monsterData;
  
     public readonly RefRW<LocalTransform> localTransform;
-
 }
 
-
-public partial struct TestSystem : ISystem
+public readonly partial struct MoveAspect : IAspect
 {
-    void OnCreate(ref SystemState state) 
-    { 
-        //Entity monster = state.EntityManager.CreateEntity(typeof(MonsterData),typeof(LocalTransform));
-        //state.EntityManager.SetComponentData(monster, new MonsterData()
-        //{
-        //    hp = 100,
-        //});
-    }
+    public readonly RefRW<MoveData> moveData;
 
+    public readonly RefRW<LocalTransform> localTransform;
+}
+
+public struct MoveData : IComponentData
+{
+    public float moveSpeed;
+}
+
+//[UpdateInGroup(typeof(SimulationSystemGroup))]
+public partial struct MonsterSystem : ISystem
+{
+    void OnUpdate(ref SystemState state)
+    {
+        foreach (MonsterAspect monster in SystemAPI.Query<MonsterAspect>())
+        {
+            monster.monsterData.ValueRW.hp -= SystemAPI.Time.DeltaTime;
+            monster.monsterData.ValueRW.createBulletTime -= SystemAPI.Time.DeltaTime;
+            if (monster.monsterData.ValueRO.createBulletTime <= 0)
+            {
+                monster.monsterData.ValueRW.createBulletTime = monster.monsterData.ValueRO.createBulletInterval;
+                Entity entity = state.EntityManager.Instantiate(monster.monsterData.ValueRO.bullet);
+                state.EntityManager.SetComponentData<LocalTransform>(entity, new LocalTransform {
+                    Position = monster.localTransform.ValueRO.Position,
+                    Scale = 1,
+                });
+            }
+        }
+    }
+}
+
+//[UpdateInGroup(typeof(LateSimulationSystemGroup))]
+public partial struct MoveSystem : ISystem
+{
     void OnUpdate(ref SystemState state)
     {
         float3 dir = new float3(0, 0, 1);
-        foreach (MonsterAspect monster in SystemAPI.Query<MonsterAspect>())
+        foreach (MoveAspect mover in SystemAPI.Query<MoveAspect>())
         {
-            monster.localTransform.ValueRW.Position += dir * SystemAPI.Time.DeltaTime * monster.monsterData.ValueRW.moveSpeed;
-            monster.monsterData.ValueRW.hp -= SystemAPI.Time.DeltaTime;
+            mover.localTransform.ValueRW.Position += dir * SystemAPI.Time.DeltaTime * mover.moveData.ValueRW.moveSpeed;
         }
     }
 }
