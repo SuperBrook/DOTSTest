@@ -6,7 +6,6 @@ using UnityEngine;
 public class BulletCharacter : MonoBehaviour
 {
     public float speed;
-
     public class BulletBaker : Baker<BulletCharacter>
     {
         public override void Bake(BulletCharacter authoring)

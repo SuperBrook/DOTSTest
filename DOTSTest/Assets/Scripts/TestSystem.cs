@@ -56,15 +56,26 @@ public partial struct MonsterSystem : ISystem
     }
 }
 
-//[UpdateInGroup(typeof(LateSimulationSystemGroup))]
+// [UpdateInGroup(typeof(LateSimulationSystemGroup))]
 public partial struct MoveSystem : ISystem
 {
     void OnUpdate(ref SystemState state)
     {
         float3 dir = new float3(0, 0, 1);
-        foreach (MoveAspect mover in SystemAPI.Query<MoveAspect>())
-        {
-            mover.localTransform.ValueRW.Position += dir * SystemAPI.Time.DeltaTime * mover.moveData.ValueRW.moveSpeed;
-        }
+        MoveJob moveJob = new() {
+            dir = dir,
+            time = SystemAPI.Time.DeltaTime
+        };
+        moveJob.Schedule();
+    }
+}
+
+public partial struct MoveJob : IJobEntity
+{
+    public float3 dir;
+    public float time;
+    public void Execute(MoveAspect mover)
+    {
+        mover.localTransform.ValueRW.Position += dir * time * mover.moveData.ValueRW.moveSpeed;
     }
 }

@@ -13,7 +13,6 @@ public class MonsterCharacter : MonoBehaviour
     public GameObject bulletObj;
 
     public float createBulletInterval;
-
     public class MonsterBak : Baker<MonsterCharacter>
     {
         public override void Bake(MonsterCharacter authoring)
